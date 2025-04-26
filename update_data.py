@@ -1,5 +1,7 @@
+import codecs
+import json
 import os
-import json, codecs, time
+import time
 
 dataDir = "src/data/"
 bibFile = "bib/references.bib"
@@ -21,60 +23,70 @@ def parseBibtex(bibFile):
             if line.startswith("@"):
                 currentId = line.split("{")[1].rstrip(",\n")
                 currentType = line.split("{")[0].strip("@ ")
-                parsedData[currentId] = {"type":currentType}
+                parsedData[currentId] = {"type": currentType}
             if currentId != "":
                 if "=" in line:
                     field = line.split("=")[0].strip().lower()
-                    value = line.split("=")[1].strip("} \n").replace("},","").strip()
+                    value = line.split("=")[1].strip("} \n").replace("},", "").strip()
                     if len(value) > 0 and value[0] == "{":
                         value = value[1:]
                     if field in parsedData[currentId]:
-                        parsedData[currentId][field] = parsedData[currentId][field] + " " +value
+                        parsedData[currentId][field] = (
+                            parsedData[currentId][field] + " " + value
+                        )
                     else:
                         parsedData[currentId][field] = value
                     lastField = field
                 else:
                     if lastField in parsedData[currentId]:
                         value = line.strip()
-                        value = value.strip("} \n").replace("},","").strip()
-                        if len(value)>0:
-                            parsedData[currentId][lastField] = parsedData[currentId][field] + " " + value
+                        value = value.strip("} \n").replace("},", "").strip()
+                        if len(value) > 0:
+                            parsedData[currentId][lastField] = (
+                                parsedData[currentId][field] + " " + value
+                            )
         fIn.close()
     return parsedData
+
 
 def writeJSON(parsedData):
     with codecs.open(bibJsFile, "w", "utf-8-sig") as fOut:
         fOut.write("define({ entries : ")
-        fOut.write(json.dumps(parsedData, sort_keys=True,indent=4, separators=(',', ': ')))
+        fOut.write(
+            json.dumps(parsedData, sort_keys=True, indent=4, separators=(",", ": "))
+        )
         fOut.write("});")
         fOut.close()
 
+
 def listAvailablePdf():
-    #papersDirWin = papersDir.replace("/", "\\")
+    # papersDirWin = papersDir.replace("/", "\\")
     fOut = open(availablePdfFile, "w")
     s = "define({availablePdf: ["
     count = 0
     for file in os.listdir(papersDir):
         if file.endswith(".pdf"):
-            s+= "\""+file.replace(".pdf","")+"\","
+            s += '"' + file.replace(".pdf", "") + '",'
             count += 1
     if count > 0:
-        s = s[:len(s) - 1]
-    s+= "]});"
+        s = s[: len(s) - 1]
+    s += "]});"
     fOut.write(s)
-    
+
+
 def listAvailableImg():
     fOut = open(availableImgFile, "w")
     s = "define({ availableImg: ["
     count = 0
     for file in os.listdir(papersImgDir):
         if file.endswith(".png"):
-            s+= "\""+file.replace(".png","")+"\","
+            s += '"' + file.replace(".png", "") + '",'
             count += 1
     if count > 0:
-        s = s[:len(s) - 1]
-    s+= "]});"
+        s = s[: len(s) - 1]
+    s += "]});"
     fOut.write(s)
+
 
 def update():
     print("convert bib file")
@@ -85,13 +97,14 @@ def update():
     listAvailableImg()
     print("done")
 
+
 prevBibTime = 0
 while True:
     currentBibTime = os.stat(bibFile).st_mtime
-    if (prevBibTime != currentBibTime):
+    if prevBibTime != currentBibTime:
         print("detected change in bib file")
         update()
         prevBibTime = currentBibTime
     else:
-        print("waiting for changes in bib file: "+bibFile)
-    time.sleep(1);
+        print("waiting for changes in bib file: " + bibFile)
+    time.sleep(1)
